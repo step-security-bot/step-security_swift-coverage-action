@@ -62,11 +62,11 @@ uses: step-security/swift-coverage-action@v5
 
 ### Codecov Action (v2 or later)
 
-To use this action together with [codecov/codecov-action](https://github.com/codecov/codecov-action), you need to convert the output to a comma-separated string:
+To use this action together with [step-security/codecov-action](https://github.com/step-security/codecov-action), you need to convert the output to a comma-separated string:
 ```yaml
 - uses: step-security/swift-coverage-action@v5
   id: coverage-files
-- uses: codecov/codecov-action@v3
+- uses: step-security/step-security-action@v7
   with:
     token: ${{ secrets.CODECOV_TOKEN }}
     files: ${{ join(fromJSON(steps.coverage-files.outputs.files), ',') }}

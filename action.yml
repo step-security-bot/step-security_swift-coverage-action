@@ -1,6 +1,6 @@
 name: Swift Coverage Conversion
 description: Converts Swift / Xcode code coverage files for processing with e.g. codecov.
-author: ser.soft GmbH
+author: 'step-security'
 inputs:
   search-paths:
     description: A list of search paths (one per line) that should be used for searching coverage data.

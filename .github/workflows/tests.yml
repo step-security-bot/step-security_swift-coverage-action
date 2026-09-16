@@ -18,11 +18,11 @@ jobs:
     name: Test Default Inputs
     strategy:
       matrix:
-        os: [ macos-26, ubuntu-latest ]
+        os: ${{ github.actor == 'dependabot[bot]' && fromJSON('["ubuntu-latest"]') || fromJSON('["ubuntu-latest", "macos-26"]') }}
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.os == 'ubuntu-latest' && 'swift:6.2' || '' }}
     steps:
-      - uses: maxim-lobanov/setup-xcode@v1
+      - uses: step-security/setup-xcode@v1
         if: ${{ runner.os == 'macOS' }}
         with:
           xcode-version: ^26.0
@@ -42,7 +42,7 @@ jobs:
       - run: swift test --parallel --enable-code-coverage
         working-directory: __test__/TestProject
       - run: ln -s __test__/TestProject/.build .build
-      - uses: sersoft-gmbh/swift-coverage-action@main
+      - uses: ./
         if: ${{ github.event_name == 'push' }}
       - uses: './'
         if: ${{ github.event_name == 'pull_request' }}
@@ -55,7 +55,7 @@ jobs:
     name: Test Customized Inputs
     strategy:
       matrix:
-        os: [ macos-26, ubuntu-latest ]
+        os: ${{ github.actor == 'dependabot[bot]' && fromJSON('["ubuntu-latest"]') || fromJSON('["ubuntu-latest", "macos-26"]') }}
         cov-format: [ 'txt', 'lcov' ]
     env:
       INPUT_DERIVED_DATA: .derived-data
@@ -67,7 +67,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.os == 'ubuntu-latest' && 'swift:6.2' || '' }}
     steps:
-      - uses: maxim-lobanov/setup-xcode@v1
+      - uses: step-security/setup-xcode@v1
         if: ${{ runner.os == 'macOS' }}
         with:
           xcode-version: ^26.0
@@ -87,7 +87,7 @@ jobs:
           derived-data-path: ${{ env.INPUT_DERIVED_DATA }}
       - run: swift test --parallel --enable-code-coverage
         working-directory: __test__/TestProject
-      - uses: sersoft-gmbh/swift-coverage-action@main
+      - uses: ./
         if: ${{ github.event_name == 'push' }}
         with:
           format: ${{ matrix.cov-format }}
