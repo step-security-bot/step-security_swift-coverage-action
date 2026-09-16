@@ -1,0 +1,45 @@
+{
+  "name": "swift-coverage-action",
+  "version": "5.0.0",
+  "description": "A GitHub action that converts Swift / Xcode code coverage files.",
+  "engines": {
+    "node": "^24"
+  },
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "pack": "rm -rf dist && ncc build lib/main.js -o dist --license license.txt --target es2024"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sersoft-gmbh/swift-coverage-action.git"
+  },
+  "keywords": [
+    "Swift",
+    "Xcode",
+    "LLVM",
+    "Coverage",
+    "Codecov"
+  ],
+  "author": "ser.soft GmbH",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/sersoft-gmbh/swift-coverage-action/issues"
+  },
+  "homepage": "https://github.com/sersoft-gmbh/swift-coverage-action#readme",
+  "dependencies": {
+    "@actions/core": "^3.0.1",
+    "@actions/exec": "^3.0.0",
+    "@actions/io": "^3.0.2"
+  },
+  "devDependencies": {
+    "@tsconfig/node24": "^24.0.5",
+    "@types/node": "^24.13.4",
+    "@vercel/ncc": "^0.45.0",
+    "typescript": "^7.0.2"
+  }
+}

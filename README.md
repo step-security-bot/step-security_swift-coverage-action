@@ -1,1 +1,73 @@
-# swift-coverage-action
+[![StepSecurity Maintained Action](https://raw.githubusercontent.com/step-security/maintained-actions-assets/main/assets/maintained-action-banner.png)](https://docs.stepsecurity.io/actions/stepsecurity-maintained-actions)
+
+# Swift Coverage Conversion
+
+[![Tests](https://github.com/step-security/swift-coverage-action/actions/workflows/tests.yml/badge.svg)](https://github.com/step-security/swift-coverage-action/actions/workflows/tests.yml)
+
+This action converts code coverage files from `swift test` or `xcodebuild` runs for processing with for example codecov.
+Note that this action does not run any test. Use `swift test`, `xcodebuild` or [xcodebuild-action](https://github.com/sersoft-gmbh/xcodebuild-action) for that.
+
+## Inputs
+
+### `search-paths`
+
+A list of search paths (one per line) that should be used for searching coverage data.<br/>
+Default: 
+```
+./.build
+$HOME/Library/Developer/Xcode/DerivedData
+```
+
+### `output`
+
+The path to the output folder. Note that this folder will be deleted / overwritten by this action.
+You should probably put it in `.gitignore`.<br/>
+Default: `./.swiftcov`
+
+### `format`
+
+The format to write the coverage files in. Can be 'lcov' or 'txt'.<br/>
+Default: `lcov`
+
+### `target-name-filter`
+
+A regular expression that is used to filter coverage files by their target names.
+
+### `ignore-filename-regex`
+
+A regular expression that is used to filter coverage files by their filenames.
+
+### `ignore-conversion-failures`
+
+If `true`, conversion failures are ignored. If `fail-on-empty-output` is also set to `true`, the action might still fail if all conversions fail.<br/>
+Default: `'false'`
+
+### `fail-on-empty-output`
+
+If `true`, the action fails if no coverage files were found (output is still set to an empty array).<br/>
+Default: `'false'`
+
+## Outputs
+
+### `files`
+
+The (JSON encoded) array of (absolute) file paths that were written. They are all contained inside the directory specified in the `output` input.
+
+## Example Usage
+
+Use the following snippet after running tests with Swift or Xcode to convert those coverage files:
+```yaml
+uses: step-security/swift-coverage-action@v5
+```
+
+### Codecov Action (v2 or later)
+
+To use this action together with [codecov/codecov-action](https://github.com/codecov/codecov-action), you need to convert the output to a comma-separated string:
+```yaml
+- uses: step-security/swift-coverage-action@v5
+  id: coverage-files
+- uses: codecov/codecov-action@v3
+  with:
+    token: ${{ secrets.CODECOV_TOKEN }}
+    files: ${{ join(fromJSON(steps.coverage-files.outputs.files), ',') }}
+```
