@@ -1,0 +1,130 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'dist/*.js'
+      - '.github/workflows/tests.yml'
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  test-defaults:
+    name: Test Default Inputs
+    strategy:
+      matrix:
+        os: ${{ github.actor == 'dependabot[bot]' && fromJSON('["ubuntu-latest"]') || fromJSON('["ubuntu-latest", "macos-26"]') }}
+    runs-on: ${{ matrix.os }}
+    container: ${{ matrix.os == 'ubuntu-latest' && 'swift:6.2' || '' }}
+    steps:
+      - uses: step-security/setup-xcode@v1
+        if: ${{ runner.os == 'macOS' }}
+        with:
+          xcode-version: ^26.0
+      - uses: actions/checkout@v7
+      - name: Generate action code
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: ./.github/actions/generate-action-code
+      - uses: sersoft-gmbh/xcodebuild-action@v4
+        if: ${{ runner.os == 'macOS' }}
+        with:
+          spm-package: __test__/TestProject
+          scheme: TestProject-Package
+          destination: platform=macOS
+          action: test
+          enable-code-coverage: true
+          parallel-testing-enabled: true
+      - run: swift test --parallel --enable-code-coverage
+        working-directory: __test__/TestProject
+      - run: ln -s __test__/TestProject/.build .build
+      - uses: ./
+        if: ${{ github.event_name == 'push' }}
+      - uses: './'
+        if: ${{ github.event_name == 'pull_request' }}
+      - name: Check for produced coverage files
+        run: | # check that the directory exists and contains files
+          test -d '.swiftcov' && \
+          test "$(find '.swiftcov' -name '*.lcov')" != ''
+
+  test-customized:
+    name: Test Customized Inputs
+    strategy:
+      matrix:
+        os: ${{ github.actor == 'dependabot[bot]' && fromJSON('["ubuntu-latest"]') || fromJSON('["ubuntu-latest", "macos-26"]') }}
+        cov-format: [ 'txt', 'lcov' ]
+    env:
+      INPUT_DERIVED_DATA: .derived-data
+      INPUT_SEARCH_PATHS: |
+        __test__/TestProject/.build
+        .derived-data
+      INPUT_TARGET_NAME_FILTER: TestProject(1|Package).*
+      INPUT_OUTPUT_FOLDER: .swiftcov-test
+    runs-on: ${{ matrix.os }}
+    container: ${{ matrix.os == 'ubuntu-latest' && 'swift:6.2' || '' }}
+    steps:
+      - uses: step-security/setup-xcode@v1
+        if: ${{ runner.os == 'macOS' }}
+        with:
+          xcode-version: ^26.0
+      - uses: actions/checkout@v7
+      - name: Generate action code
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: ./.github/actions/generate-action-code
+      - uses: sersoft-gmbh/xcodebuild-action@v4
+        if: ${{ runner.os == 'macOS' }}
+        with:
+          spm-package: __test__/TestProject
+          scheme: TestProject-Package
+          destination: platform=macOS
+          action: test
+          enable-code-coverage: true
+          parallel-testing-enabled: true
+          derived-data-path: ${{ env.INPUT_DERIVED_DATA }}
+      - run: swift test --parallel --enable-code-coverage
+        working-directory: __test__/TestProject
+      - uses: ./
+        if: ${{ github.event_name == 'push' }}
+        with:
+          format: ${{ matrix.cov-format }}
+          search-paths: ${{ env.INPUT_SEARCH_PATHS }}
+          output: ${{ env.INPUT_OUTPUT_FOLDER }}
+          target-name-filter: ${{ env.INPUT_TARGET_NAME_FILTER }}
+      - uses: './'
+        if: ${{ github.event_name == 'pull_request' }}
+        with:
+          format: ${{ matrix.cov-format }}
+          search-paths: ${{ env.INPUT_SEARCH_PATHS }}
+          output: ${{ env.INPUT_OUTPUT_FOLDER }}
+          target-name-filter: ${{ env.INPUT_TARGET_NAME_FILTER }}
+      - name: Check for produced coverage files
+        env:
+          RUNNER_OS: ${{ runner.os }}
+          COV_FORMAT: ${{ matrix.cov-format }}
+        run: | # check that the directory exists and contains files
+          if [ ! -d "${INPUT_OUTPUT_FOLDER}" ]; then
+            echo '::error::Output folder does not exist!'
+            exit 1
+          fi
+          if [ "$(find "${INPUT_OUTPUT_FOLDER}" -name "TestProject2*.${COV_FORMAT}")" != '' ]; then
+              echo '::error::Coverage files for incorrect project found!'
+              exit 1
+          fi
+          if [ "${RUNNER_OS}" = 'macOS' ]; then
+            if [ "$(find "${INPUT_OUTPUT_FOLDER}" -name "TestProject1*.${COV_FORMAT}")" = '' ]; then
+              echo '::error::No coverage files found!'
+              exit 1
+            fi
+          elif [ "${RUNNER_OS}" = 'Linux' ]; then
+            if [ "$(find "${INPUT_OUTPUT_FOLDER}" -name "TestProjectPackage*.${COV_FORMAT}")" = '' ]; then
+              echo '::error::No coverage files found!'
+              exit 1
+            fi
+          else
+            echo '::error::Unsupported OS!'
+            exit 1
+          fi
